@@ -1,5 +1,6 @@
 package com.kosiarz.pixelart.filter;
 
+import com.kosiarz.pixelart.annotation.LogExecutionTime;
 import org.springframework.stereotype.Service;
 
 import java.awt.image.BufferedImage;
@@ -7,6 +8,7 @@ import java.awt.image.BufferedImage;
 @Service
 public class GaussianFilterService {
 
+    @LogExecutionTime("Gaussian Blur")
     public BufferedImage appyFilter(BufferedImage originalImage, int radius, double sigma) {
         int width = originalImage.getWidth();
         int height = originalImage.getHeight();
