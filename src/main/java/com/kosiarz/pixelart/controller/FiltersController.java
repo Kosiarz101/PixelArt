@@ -38,9 +38,9 @@ public class FiltersController {
 
             BufferedImage blurredImage;
             if (multithreaded)
-                blurredImage = gaussianFilterService.appyFilterMultiThreaded(inputImage, radius, sigma);
+                blurredImage = gaussianFilterService.applyFilterMultiThreaded(inputImage, radius, sigma);
             else
-                blurredImage = gaussianFilterService.appyFilter(inputImage, radius, sigma);
+                blurredImage = gaussianFilterService.applyFilter(inputImage, radius, sigma);
 
             ByteArrayOutputStream imageStream = new ByteArrayOutputStream();
             ImageIO.write(blurredImage, "png", imageStream);
