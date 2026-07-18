@@ -30,11 +30,17 @@ public class FiltersController {
     @PostMapping("/gaussian-blur")
     public ResponseEntity<byte[]> applyGaussian(@RequestParam("image") MultipartFile file,
                                                 @RequestParam(value = "radius") int radius,
-                                                @RequestParam(value = "sigma") double sigma) {
+                                                @RequestParam(value = "sigma") double sigma,
+                                                @RequestParam(value = "multi-threaded", defaultValue = "false")
+                                                    boolean multithreaded) {
         try {
             BufferedImage inputImage = ImageIO.read(file.getInputStream());
 
-            BufferedImage blurredImage = gaussianFilterService.appyFilter(inputImage, radius, sigma);
+            BufferedImage blurredImage;
+            if (multithreaded)
+                blurredImage = gaussianFilterService.appyFilterMultiThreaded(inputImage, radius, sigma);
+            else
+                blurredImage = gaussianFilterService.appyFilter(inputImage, radius, sigma);
 
             ByteArrayOutputStream imageStream = new ByteArrayOutputStream();
             ImageIO.write(blurredImage, "png", imageStream);

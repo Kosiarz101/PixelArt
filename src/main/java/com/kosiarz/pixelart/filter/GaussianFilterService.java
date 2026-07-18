@@ -4,6 +4,7 @@ import com.kosiarz.pixelart.annotation.LogExecutionTime;
 import org.springframework.stereotype.Service;
 
 import java.awt.image.BufferedImage;
+import java.util.concurrent.Executors;
 
 @Service
 public class GaussianFilterService {
@@ -53,6 +54,62 @@ public class GaussianFilterService {
                 int finalRgb = (finalR << 16) | (finalG << 8) | finalB;
 
                 outputImage.setRGB(x, y, finalRgb);
+            }
+        }
+
+        return outputImage;
+    }
+
+    @LogExecutionTime("Gaussian Blur multithreaded")
+    public BufferedImage appyFilterMultiThreaded(BufferedImage originalImage, int radius, double sigma) {
+        int width = originalImage.getWidth();
+        int height = originalImage.getHeight();
+
+        double[][] kernel = generateGaussianKernel(radius, sigma);
+
+        BufferedImage outputImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+
+            for (int y = 0; y < height; y++) {
+                final int currentRow = y;
+
+                // every row is run parallel
+                executor.submit(() -> {
+                    for (int x = 0; x < width; x++) {
+
+                        double redSum = 0.0;
+                        double greenSum = 0.0;
+                        double blueSum = 0.0;
+
+                        for (int ky = -radius; ky <= radius; ky++) {
+                            for (int kx = -radius; kx <= radius; kx++) {
+
+                                int neighborX = Math.clamp(x + kx, 0, width - 1);
+                                int neighborY = Math.clamp(currentRow + ky, 0, height - 1);
+
+                                int rgb = originalImage.getRGB(neighborX, neighborY);
+                                int r = (rgb >> 16) & 0xFF;
+                                int g = (rgb >> 8) & 0xFF;
+                                int b = rgb & 0xFF;
+
+                                double weight = kernel[ky + radius][kx + radius];
+
+                                redSum += r * weight;
+                                greenSum += g * weight;
+                                blueSum += b * weight;
+                            }
+                        }
+
+                        int finalR = Math.clamp((int) Math.round(redSum), 0, 255);
+                        int finalG = Math.clamp((int) Math.round(greenSum), 0, 255);
+                        int finalB = Math.clamp((int) Math.round(blueSum), 0, 255);
+
+                        int finalRgb = (finalR << 16) | (finalG << 8) | finalB;
+
+                        outputImage.setRGB(x, currentRow, finalRgb);
+                    }
+                });
             }
         }
 
