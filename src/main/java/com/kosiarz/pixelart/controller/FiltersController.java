@@ -1,6 +1,7 @@
 package com.kosiarz.pixelart.controller;
 
 import com.kosiarz.pixelart.filter.GaussianFilterService;
+import com.kosiarz.pixelart.filter.LaplacianFilterService;
 import com.kosiarz.pixelart.filter.SobelFilterService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -28,6 +29,7 @@ public class FiltersController {
 
     private final GaussianFilterService gaussianFilterService;
     private final SobelFilterService sobelFilterService;
+    private final LaplacianFilterService laplacianFilterService;
 
     @PostMapping("/gaussian-blur")
     public ResponseEntity<byte[]> applyGaussian(@RequestParam("image") MultipartFile file,
@@ -61,7 +63,7 @@ public class FiltersController {
     @PostMapping("/sobel")
     public ResponseEntity<byte[]> applySobel(@RequestParam("image") MultipartFile file,
                                              @RequestParam(value = "multi-threaded", defaultValue = "false")
-                                                boolean multithreaded) {
+                                             boolean multithreaded) {
         try {
             BufferedImage inputImage = ImageIO.read(file.getInputStream());
 
@@ -78,6 +80,33 @@ public class FiltersController {
 
         } catch (IOException e) {
             log.error("Error occurred while applying Sobel filter: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @PostMapping("/laplacian")
+    public ResponseEntity<byte[]> applyLaplacian(@RequestParam("image") MultipartFile file,
+                                                 @RequestParam(value = "multi-threaded", defaultValue = "false")
+                                                 boolean multithreaded) {
+        try {
+            BufferedImage inputImage = ImageIO.read(file.getInputStream());
+
+            BufferedImage blurredImage;
+            if (multithreaded)
+                blurredImage = laplacianFilterService.applyFilterMultiThreaded(inputImage);
+            else
+                blurredImage = laplacianFilterService.applyFilter(inputImage);
+
+            ByteArrayOutputStream imageStream = new ByteArrayOutputStream();
+            ImageIO.write(blurredImage, "png", imageStream);
+            byte[] imageBytes = imageStream.toByteArray();
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_PNG)
+                    .body(imageBytes);
+
+        } catch (IOException e) {
+            log.error("Error occurred while applying Laplacian filter: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
